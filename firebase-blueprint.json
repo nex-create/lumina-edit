@@ -1,0 +1,105 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated user studio profile and cloud backup preferences.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID matching the document ID." },
+        "displayName": { "type": "string", "description": "User display name (1-80 chars)." },
+        "email": { "type": "string", "description": "User email address (0-120 chars)." },
+        "photoUrl": { "type": "string", "description": "Optional Google avatar URL (<= 500 chars)." },
+        "autoSyncEnabled": { "type": "boolean", "description": "Whether automatic cloud backup sync is enabled." },
+        "totalBackups": { "type": "integer", "description": "Non-negative count of synced projects." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())." }
+      },
+      "required": ["userId", "displayName", "email", "autoSyncEnabled", "totalBackups", "createdAt", "updatedAt"]
+    },
+    "CloudPhotoProject": {
+      "title": "CloudPhotoProject",
+      "description": "Non-destructive photo edit recipe, crop state, export telemetry, and compact preview thumbnail.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner UID." },
+        "title": { "type": "string", "description": "Project title (1-100 chars)." },
+        "sourceType": { "type": "string", "enum": ["sample", "gallery"], "description": "Origin of the photo." },
+        "sampleKey": { "type": "string", "description": "Optional bundled sample asset key (<= 60 chars)." },
+        "localUri": { "type": "string", "description": "Optional device content URI (<= 600 chars)." },
+        "thumbnailBase64": { "type": "string", "description": "Optional compressed JPEG preview thumbnail (<= 120000 chars)." },
+        "storagePath": { "type": "string", "description": "Optional Firebase Storage path for the edited photo (<= 300 chars)." },
+        "storageDownloadUrl": { "type": "string", "description": "Optional Firebase Storage download URL for cross-device sync (<= 1200 chars)." },
+        "syncedPhotoSizeBytes": { "type": "integer", "description": "Optional uploaded edited photo size in bytes (0 to 104857600)." },
+        "filterId": { "type": "string", "description": "Active filter preset identifier (1-40 chars)." },
+        "filterIntensity": { "type": "number", "description": "Filter blend intensity (0.0 to 1.0)." },
+        "exposure": { "type": "number", "description": "Exposure adjustment (-1.0 to 1.0)." },
+        "contrast": { "type": "number", "description": "Contrast adjustment (-1.0 to 1.0)." },
+        "saturation": { "type": "number", "description": "Saturation adjustment (-1.0 to 1.0)." },
+        "warmth": { "type": "number", "description": "Warmth adjustment (-1.0 to 1.0)." },
+        "tint": { "type": "number", "description": "Tint adjustment (-1.0 to 1.0)." },
+        "fade": { "type": "number", "description": "Matte fade amount (0.0 to 1.0)." },
+        "vignette": { "type": "number", "description": "Vignette strength (0.0 to 1.0)." },
+        "aspectRatio": { "type": "string", "description": "Crop aspect ratio key (1-20 chars)." },
+        "cropLeft": { "type": "number", "description": "Normalized crop left edge (0.0 to 1.0)." },
+        "cropTop": { "type": "number", "description": "Normalized crop top edge (0.0 to 1.0)." },
+        "cropRight": { "type": "number", "description": "Normalized crop right edge (0.0 to 1.0)." },
+        "cropBottom": { "type": "number", "description": "Normalized crop bottom edge (0.0 to 1.0)." },
+        "rotationDegrees": { "type": "integer", "description": "Quarter-turn rotation (0, 90, 180, or 270)." },
+        "straightenDegrees": { "type": "number", "description": "Fine straighten angle (-45.0 to 45.0)." },
+        "flipHorizontal": { "type": "boolean", "description": "Horizontal mirror flag." },
+        "flipVertical": { "type": "boolean", "description": "Vertical mirror flag." },
+        "lastExportPlatform": { "type": "string", "description": "Optional last export target label (<= 40 chars)." },
+        "exportedCount": { "type": "integer", "description": "Number of times exported (>= 0)." },
+        "deviceName": { "type": "string", "description": "Originating device model name (1-80 chars)." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())." }
+      },
+      "required": [
+        "userId", "title", "sourceType", "filterId", "filterIntensity",
+        "exposure", "contrast", "saturation", "warmth", "tint", "fade", "vignette",
+        "aspectRatio", "cropLeft", "cropTop", "cropRight", "cropBottom",
+        "rotationDegrees", "straightenDegrees", "flipHorizontal", "flipVertical",
+        "exportedCount", "deviceName", "createdAt", "updatedAt"
+      ]
+    },
+    "CloudPreset": {
+      "title": "CloudPreset",
+      "description": "User-authored reusable filter and adjustment recipe synced across devices.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner UID." },
+        "name": { "type": "string", "description": "Custom preset name (1-40 chars)." },
+        "filterId": { "type": "string", "description": "Base filter identifier (1-40 chars)." },
+        "filterIntensity": { "type": "number", "description": "Filter blend intensity (0.0 to 1.0)." },
+        "exposure": { "type": "number", "description": "Exposure adjustment (-1.0 to 1.0)." },
+        "contrast": { "type": "number", "description": "Contrast adjustment (-1.0 to 1.0)." },
+        "saturation": { "type": "number", "description": "Saturation adjustment (-1.0 to 1.0)." },
+        "warmth": { "type": "number", "description": "Warmth adjustment (-1.0 to 1.0)." },
+        "tint": { "type": "number", "description": "Tint adjustment (-1.0 to 1.0)." },
+        "fade": { "type": "number", "description": "Matte fade amount (0.0 to 1.0)." },
+        "vignette": { "type": "number", "description": "Vignette strength (0.0 to 1.0)." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp (FieldValue.serverTimestamp())." }
+      },
+      "required": [
+        "userId", "name", "filterId", "filterIntensity",
+        "exposure", "contrast", "saturation", "warmth", "tint", "fade", "vignette",
+        "createdAt", "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user studio profile and sync configuration."
+    },
+    "/users/{userId}/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/CloudPhotoProject" },
+      "description": "Cloud-synced photo edit backups for a user."
+    },
+    "/users/{userId}/presets/{presetId}": {
+      "schema": { "$ref": "#/entities/CloudPreset" },
+      "description": "Cloud-synced custom filter presets authored by a user."
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Lumina Edit",
+  "description": "A creative photo studio with cinematic filters, precision crop & aspect tools, social media & gallery export, and cloud backup sync.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

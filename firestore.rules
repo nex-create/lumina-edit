@@ -1,0 +1,206 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: Default-deny all paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidTimestamp(ts) {
+      return ts is timestamp && ts <= request.time;
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId == request.auth.uid && data.userId.size() <= 128 &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80 &&
+             data.email is string && data.email.size() <= 120 &&
+             (!('photoUrl' in data) || (data.photoUrl is string && data.photoUrl.size() <= 500)) &&
+             data.autoSyncEnabled is bool &&
+             data.totalBackups is int && data.totalBackups >= 0 && data.totalBackups <= 100000;
+    }
+
+    function isValidProject(data) {
+      return data.userId is string && data.userId == request.auth.uid && data.userId.size() <= 128 &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+             data.sourceType is string && data.sourceType in ['sample', 'gallery'] &&
+             (!('sampleKey' in data) || (data.sampleKey is string && data.sampleKey.size() <= 60)) &&
+             (!('localUri' in data) || (data.localUri is string && data.localUri.size() <= 600)) &&
+             (!('thumbnailBase64' in data) || (data.thumbnailBase64 is string && data.thumbnailBase64.size() <= 120000)) &&
+             (!('storagePath' in data) || (data.storagePath is string && data.storagePath.size() <= 300)) &&
+             (!('storageDownloadUrl' in data) || (data.storageDownloadUrl is string && data.storageDownloadUrl.size() <= 1200)) &&
+             (!('syncedPhotoSizeBytes' in data) || (data.syncedPhotoSizeBytes is int && data.syncedPhotoSizeBytes >= 0 && data.syncedPhotoSizeBytes <= 104857600)) &&
+             data.filterId is string && data.filterId.size() >= 1 && data.filterId.size() <= 40 &&
+             data.filterIntensity is number && data.filterIntensity >= 0.0 && data.filterIntensity <= 1.0 &&
+             data.exposure is number && data.exposure >= -1.0 && data.exposure <= 1.0 &&
+             data.contrast is number && data.contrast >= -1.0 && data.contrast <= 1.0 &&
+             data.saturation is number && data.saturation >= -1.0 && data.saturation <= 1.0 &&
+             data.warmth is number && data.warmth >= -1.0 && data.warmth <= 1.0 &&
+             data.tint is number && data.tint >= -1.0 && data.tint <= 1.0 &&
+             data.fade is number && data.fade >= 0.0 && data.fade <= 1.0 &&
+             data.vignette is number && data.vignette >= 0.0 && data.vignette <= 1.0 &&
+             data.aspectRatio is string && data.aspectRatio.size() >= 1 && data.aspectRatio.size() <= 20 &&
+             data.cropLeft is number && data.cropLeft >= 0.0 && data.cropLeft <= 1.0 &&
+             data.cropTop is number && data.cropTop >= 0.0 && data.cropTop <= 1.0 &&
+             data.cropRight is number && data.cropRight >= 0.0 && data.cropRight <= 1.0 &&
+             data.cropBottom is number && data.cropBottom >= 0.0 && data.cropBottom <= 1.0 &&
+             data.cropLeft < data.cropRight &&
+             data.cropTop < data.cropBottom &&
+             data.rotationDegrees is int && data.rotationDegrees in [0, 90, 180, 270] &&
+             data.straightenDegrees is number && data.straightenDegrees >= -45.0 && data.straightenDegrees <= 45.0 &&
+             data.flipHorizontal is bool &&
+             data.flipVertical is bool &&
+             (!('lastExportPlatform' in data) || (data.lastExportPlatform is string && data.lastExportPlatform.size() <= 40)) &&
+             data.exportedCount is int && data.exportedCount >= 0 && data.exportedCount <= 100000 &&
+             data.deviceName is string && data.deviceName.size() >= 1 && data.deviceName.size() <= 80;
+    }
+
+    function isValidPreset(data) {
+      return data.userId is string && data.userId == request.auth.uid && data.userId.size() <= 128 &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 40 &&
+             data.filterId is string && data.filterId.size() >= 1 && data.filterId.size() <= 40 &&
+             data.filterIntensity is number && data.filterIntensity >= 0.0 && data.filterIntensity <= 1.0 &&
+             data.exposure is number && data.exposure >= -1.0 && data.exposure <= 1.0 &&
+             data.contrast is number && data.contrast >= -1.0 && data.contrast <= 1.0 &&
+             data.saturation is number && data.saturation >= -1.0 && data.saturation <= 1.0 &&
+             data.warmth is number && data.warmth >= -1.0 && data.warmth <= 1.0 &&
+             data.tint is number && data.tint >= -1.0 && data.tint <= 1.0 &&
+             data.fade is number && data.fade >= 0.0 && data.fade <= 1.0 &&
+             data.vignette is number && data.vignette >= 0.0 && data.vignette <= 1.0;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll(['userId', 'displayName', 'email', 'autoSyncEnabled', 'totalBackups', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'displayName', 'email', 'photoUrl', 'autoSyncEnabled', 'totalBackups', 'createdAt', 'updatedAt']) &&
+                       isValidUserProfile(incoming()) &&
+                       isValidTimestamp(incoming().createdAt) &&
+                       isValidTimestamp(incoming().updatedAt);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidTimestamp(incoming().updatedAt) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email', 'photoUrl', 'autoSyncEnabled', 'totalBackups', 'updatedAt']);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      match /projects/{projectId} {
+        allow get: if isOwner(userId) && isValidId(projectId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(projectId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'title', 'sourceType', 'filterId', 'filterIntensity',
+                           'exposure', 'contrast', 'saturation', 'warmth', 'tint', 'fade', 'vignette',
+                           'aspectRatio', 'cropLeft', 'cropTop', 'cropRight', 'cropBottom',
+                           'rotationDegrees', 'straightenDegrees', 'flipHorizontal', 'flipVertical',
+                           'exportedCount', 'deviceName', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'title', 'sourceType', 'sampleKey', 'localUri', 'thumbnailBase64',
+                           'storagePath', 'storageDownloadUrl', 'syncedPhotoSizeBytes',
+                           'filterId', 'filterIntensity', 'exposure', 'contrast', 'saturation',
+                           'warmth', 'tint', 'fade', 'vignette', 'aspectRatio',
+                           'cropLeft', 'cropTop', 'cropRight', 'cropBottom',
+                           'rotationDegrees', 'straightenDegrees', 'flipHorizontal', 'flipVertical',
+                           'lastExportPlatform', 'exportedCount', 'deviceName', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidProject(incoming()) &&
+                         isValidTimestamp(incoming().createdAt) &&
+                         isValidTimestamp(incoming().updatedAt);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(projectId) &&
+                         isValidProject(incoming()) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidTimestamp(incoming().updatedAt) &&
+                         (
+                           // Action: Sync edits & thumbnail
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'title', 'localUri', 'thumbnailBase64',
+                             'storagePath', 'storageDownloadUrl', 'syncedPhotoSizeBytes',
+                             'filterId', 'filterIntensity',
+                             'exposure', 'contrast', 'saturation', 'warmth', 'tint', 'fade', 'vignette',
+                             'aspectRatio', 'cropLeft', 'cropTop', 'cropRight', 'cropBottom',
+                             'rotationDegrees', 'straightenDegrees', 'flipHorizontal', 'flipVertical',
+                             'deviceName', 'updatedAt'
+                           ]) ||
+                           // Action: Attach uploaded Firebase Storage asset metadata
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'storagePath', 'storageDownloadUrl', 'syncedPhotoSizeBytes', 'deviceName', 'updatedAt'
+                           ]) ||
+                           // Action: Record export event
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'lastExportPlatform', 'exportedCount', 'updatedAt'
+                           ])
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(projectId);
+      }
+
+      match /presets/{presetId} {
+        allow get: if isOwner(userId) && isValidId(presetId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(presetId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'name', 'filterId', 'filterIntensity',
+                           'exposure', 'contrast', 'saturation', 'warmth', 'tint', 'fade', 'vignette',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'name', 'filterId', 'filterIntensity',
+                           'exposure', 'contrast', 'saturation', 'warmth', 'tint', 'fade', 'vignette',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidPreset(incoming()) &&
+                         isValidTimestamp(incoming().createdAt) &&
+                         isValidTimestamp(incoming().updatedAt);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(presetId) &&
+                         isValidPreset(incoming()) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidTimestamp(incoming().updatedAt) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'name', 'filterId', 'filterIntensity',
+                           'exposure', 'contrast', 'saturation', 'warmth', 'tint', 'fade', 'vignette',
+                           'updatedAt'
+                         ]);
+
+        allow delete: if isOwner(userId) && isValidId(presetId);
+      }
+    }
+  }
+}
